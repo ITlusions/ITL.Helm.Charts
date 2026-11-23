@@ -1,0 +1,52 @@
+namespace:
+  create: true
+  name: itlusions-headscale-ui
+image:
+  repository: ghcr.io/tale/headplane
+  tag: 0.8.2
+adminAllowedCIDRs:
+- 192.0.2.0/24
+route:
+  hostname: headplane.itlusions.com
+  gateway:
+    name: eg
+    namespace: auth
+service:
+  port: 3000
+headscale:
+  url: http://headscale.itlusions-headscale.svc.cluster.local:8080
+  publicUrl: https://headscale.itlusions.com
+  apiKeySecretRef:
+    name: headplane-headscale-api-key
+    key: api-key
+server:
+  cookieSecretRef:
+    name: headplane-cookie-secret
+    key: cookie-secret
+  dataPath: /var/lib/headplane
+storage:
+  storageClassName: do-block-storage
+  size: 64Mi
+oidc:
+  issuer: https://sts.itlusions.com/realms/itlusions
+  scope: openid email profile
+  usePkce: true
+  defaultRole: member
+  roleClaim: headplane_role
+keycloak:
+  enabled: true
+  keycloakCRName: itlusions-keycloak
+  realm: itlusions
+  namespace: auth
+  clientId: itlusions-headplane
+  displayName: Headplane (Headscale admin UI)
+  redirectUris:
+  - https://headplane.itlusions.com/admin/oidc/callback
+  webOrigins:
+  - https://headplane.itlusions.com
+  clientSecretRef:
+    name: headplane-oidc-secret
+    key: client-secret
+secrets:
+  manage: true
+resources: {}

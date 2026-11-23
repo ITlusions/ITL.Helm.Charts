@@ -1,0 +1,1 @@
+Skipped by CI and release discovery: renders cert-manager.io Certificate resources whose CRD is not installed in the CI cluster.

@@ -1,0 +1,31 @@
+{{- if .Values.trustBundle.enabled }}
+{{- $selector := .Values.trustBundle.namespaceSelector | default dict }}
+{{- if not $selector }}
+{{- if not .Values.trustBundle.namespaces }}
+{{- fail "trustBundle.namespaces must not be empty when no namespaceSelector is set" }}
+{{- end }}
+{{- $selector = dict "matchExpressions" (list (dict "key" "kubernetes.io/metadata.name" "operator" "In" "values" .Values.trustBundle.namespaces)) }}
+{{- else if not (or (get $selector "matchLabels") (get $selector "matchExpressions")) }}
+{{- fail "trustBundle.namespaceSelector must contain matchLabels or matchExpressions" }}
+{{- end }}
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+  name: {{ .Values.trustBundle.name | quote }}
+spec:
+  sources:
+    - secret:
+        name: {{ .Values.root.secretName | quote }}
+        key: tls.crt
+    {{- if .Values.trustBundle.includePublicCAs }}
+    - useDefaultCAs: true
+    {{- end }}
+    {{- with .Values.trustBundle.additionalSources }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  target:
+    configMap:
+      key: ca.crt
+    namespaceSelector:
+      {{- $selector | toYaml | nindent 6 }}
+{{- end }}

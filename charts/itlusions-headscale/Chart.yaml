@@ -1,0 +1,12 @@
+apiVersion: v2
+name: itlusions-headscale
+
+icon: https://raw.githubusercontent.com/ITlusions/spotinfo-helm-charts/main/docs/assets/spotinfo-logo-wo.svg
+description: >-
+  Headscale-besturingsserver voor het ITlusions-netwerk: een Tailscale-compatibele
+  mesh-VPN-coordinatieserver (open-source, niet Tailscale Inc.). Device- en
+  gebruikersinlog verloopt via Keycloak OIDC. Hoort bij itlusions-headscale-ui voor
+  de beheer-UI.
+type: application
+version: 0.1.0
+appVersion: "0.29.5"

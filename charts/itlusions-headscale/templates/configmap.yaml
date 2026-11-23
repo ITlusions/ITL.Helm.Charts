@@ -1,0 +1,67 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: headscale-config
+  namespace: {{ .Values.namespace.name }}
+data:
+  policy.hujson: |
+{{ .Files.Get "files/policy.hujson" | nindent 4 }}
+  config.yaml: |
+    server_url: {{ .Values.serverUrl | quote }}
+    listen_addr: 0.0.0.0:{{ .Values.service.port }}
+    metrics_listen_addr: 0.0.0.0:{{ .Values.service.metricsPort }}
+    # De Envoy Gateway staat voor de pod; vertrouw alleen de opgegeven proxy-CIDR's.
+    trusted_proxies:
+      {{- toYaml .Values.trustedProxies | nindent 6 }}
+
+    database:
+      type: sqlite
+      sqlite:
+        path: {{ .Values.database.path | quote }}
+        write_ahead_log: true
+
+    noise:
+      private_key_path: /var/lib/headscale/noise_private.key
+
+    # File-modus: het beleid staat als controleerbaar bestand in Git, niet in de database.
+    # Structuur: top-level `policy:`, niet onder `acl:`.
+    policy:
+      mode: file
+      path: /etc/headscale/policy.hujson
+
+    # Vereist vanaf Headscale 0.29.x: zonder dit blok start de pod niet.
+    # override_local_dns false: MagicDNS blijft werken, maar de DNS van clients wordt niet overschreven.
+    dns:
+      magic_dns: true
+      base_domain: {{ .Values.magicDnsBaseDomain | quote }}
+      override_local_dns: false
+
+    prefixes:
+      v4: {{ .Values.internalSubnet | quote }}
+
+    oidc:
+      only_start_if_oidc_is_available: true
+      issuer: {{ .Values.oidc.issuer | quote }}
+      client_id: {{ required "keycloak.clientId is required" .Values.keycloak.clientId | quote }}
+      client_secret_path: /etc/headscale/oidc/client-secret
+      scope:
+        {{- toYaml .Values.oidc.scope | nindent 8 }}
+      {{- if .Values.oidc.allowedGroups }}
+      allowed_groups:
+        {{- toYaml .Values.oidc.allowedGroups | nindent 8 }}
+      {{- end }}
+      pkce:
+        enabled: true
+        method: S256
+
+    # Gebruikt de publieke DERP-relay van Tailscale voor NAT-traversal.
+    derp:
+      server:
+        enabled: false
+      urls:
+        - https://controlplane.tailscale.com/derpmap/default
+      auto_update_enabled: true
+      update_frequency: 24h
+
+    log:
+      level: info

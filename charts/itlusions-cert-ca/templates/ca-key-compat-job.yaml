@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-ca-key-compat
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: {{ .Release.Name }}-ca-key-compat
+      restartPolicy: Never
+      containers:
+        - name: ca-key-compat
+          image: alpine/k8s:1.37.1
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+
+              echo "Waiting for {{ .Values.root.secretName }}..."
+              until kubectl get secret {{ .Values.root.secretName }} -n {{ .Release.Namespace }} >/dev/null 2>&1; do
+                sleep 2
+              done
+              ROOT_CRT_B64=$(kubectl get secret {{ .Values.root.secretName }} -n {{ .Release.Namespace }} -o jsonpath='{.data.tls\.crt}')
+              ROOT_KEY_B64=$(kubectl get secret {{ .Values.root.secretName }} -n {{ .Release.Namespace }} -o jsonpath='{.data.tls\.key}')
+              echo "Overwriting ca.crt with the root's own tls.crt, mirroring tls.key -> ca.key, on {{ .Values.root.secretName }}..."
+              kubectl patch secret {{ .Values.root.secretName }} -n {{ .Release.Namespace }} \
+                --type=json -p="[{\"op\":\"add\",\"path\":\"/data/ca.crt\",\"value\":\"$ROOT_CRT_B64\"},{\"op\":\"add\",\"path\":\"/data/ca.key\",\"value\":\"$ROOT_KEY_B64\"}]"
+              ROOT_CRT=$(echo "$ROOT_CRT_B64" | base64 -d)
+
+              for secret in {{ range .Values.intermediates }}{{ .secretName }} {{ end }}; do
+                echo "Waiting for $secret..."
+                until kubectl get secret "$secret" -n {{ .Release.Namespace }} >/dev/null 2>&1; do
+                  sleep 2
+                done
+                INT_CRT=$(kubectl get secret "$secret" -n {{ .Release.Namespace }} -o jsonpath='{.data.tls\.crt}' | base64 -d)
+                KEY=$(kubectl get secret "$secret" -n {{ .Release.Namespace }} -o jsonpath='{.data.tls\.key}')
+                CRT_B64=$(printf '%s\n%s' "$INT_CRT" "$ROOT_CRT" | base64 | tr -d '\n')
+                echo "Overwriting ca.crt with [this cert, root], mirroring tls.key -> ca.key, on $secret..."
+                kubectl patch secret "$secret" -n {{ .Release.Namespace }} \
+                  --type=json -p="[{\"op\":\"add\",\"path\":\"/data/ca.crt\",\"value\":\"$CRT_B64\"},{\"op\":\"add\",\"path\":\"/data/ca.key\",\"value\":\"$KEY\"}]"
+              done
+              echo "Done."
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-ca-key-compat
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ .Release.Name }}-ca-key-compat
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: [{{ .Values.root.secretName | quote }}{{ range .Values.intermediates }}, {{ .secretName | quote }}{{ end }}]
+    verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ .Release.Name }}-ca-key-compat
+subjects:
+  - kind: ServiceAccount
+    name: {{ .Release.Name }}-ca-key-compat
+    namespace: {{ .Release.Namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ .Release.Name }}-ca-key-compat

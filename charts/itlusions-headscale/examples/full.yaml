@@ -1,0 +1,65 @@
+namespace:
+  create: true
+  name: itlusions-headscale
+image:
+  repository: headscale/headscale
+  tag: v0.29.5
+serverUrl: https://headscale.itlusions.com
+internalSubnet: 100.64.0.0/10
+service:
+  port: 8080
+  metricsPort: 9090
+route:
+  hostname: headscale.itlusions.com
+  gateway:
+    name: eg
+    namespace: auth
+adminAllowedCIDRs: []
+trustedProxies:
+- 10.244.0.0/16
+database:
+  path: /var/lib/headscale/db.sqlite
+storage:
+  storageClassName: do-block-storage
+  size: 1Gi
+secrets:
+  manage: true
+magicDnsBaseDomain: ts.itlusions.com
+oidc:
+  issuer: https://sts.itlusions.com/realms/itlusions
+  clientSecretRef:
+    name: headscale-oidc-secret
+  allowedGroups:
+  - /itlusions-prod-platform-vpn
+  scope:
+  - openid
+  - profile
+  - email
+keycloak:
+  enabled: true
+  keycloakCRName: itlusions-keycloak
+  realm: itlusions
+  namespace: auth
+  clientId: itlusions-headscale
+  displayName: Headscale
+  redirectUris:
+  - https://headscale.itlusions.com/oidc/callback
+  webOrigins:
+  - https://headscale.itlusions.com
+  clientSecretRef:
+    name: headscale-oidc-secret
+    key: client-secret
+resources: {}
+subnetRouter:
+  enabled: false
+  image:
+    repository: tailscale/tailscale
+    tag: v1.104.2
+  hostname: itlusions-cluster-gateway
+  authKeySecretRef:
+    name: subnet-router-authkey
+    key: authkey
+  advertiseRoutes:
+  - 10.120.0.0/20
+  firewallMode: nftables
+  resources: {}

@@ -1,0 +1,73 @@
+namespace:
+  create: true
+  name: itlusions-headscale-ui
+
+image:
+  repository: ghcr.io/tale/headplane
+  tag: "0.8.2"   # controleer de release vóór uitrol als deze lang ongebruikt blijft
+
+# Headplane is een beheerinterface: alleen bereikbaar vanaf de bron-CIDR's in
+# adminAllowedCIDRs. Leeg betekent: alles geweigerd.
+adminAllowedCIDRs: []
+
+route:
+  hostname: headplane.itlusions.com
+  gateway:
+    name: eg
+    namespace: auth
+
+service:
+  port: 3000
+
+headscale:
+  # Service-DNS over namespaces heen naar itlusions-headscale.
+  url: "http://headscale.itlusions-headscale.svc.cluster.local:8080"
+  publicUrl: "https://headscale.itlusions.com"
+  # Deze key maak je aan met `headscale apikeys create` in de itlusions-headscale-pod,
+  # nadat die draait. Deze chart kan de key niet zelf aanmaken.
+  apiKeySecretRef:
+    name: headplane-headscale-api-key
+    key: api-key
+
+server:
+  # Precies 32 tekens. Genereer met: openssl rand -base64 32 | head -c 32
+  # Bewaar in een Secret, nooit in values.
+  cookieSecretRef:
+    name: headplane-cookie-secret
+    key: cookie-secret
+  dataPath: /var/lib/headplane
+
+storage:
+  # DOKS-standaard; controleer de beschikbare StorageClass op het cluster.
+  storageClassName: do-block-storage
+  size: 64Mi
+
+oidc:
+  issuer: "https://sts.itlusions.com/realms/itlusions"
+  scope: "openid email profile"
+  usePkce: true
+  defaultRole: "member"
+  roleClaim: "headplane_role"
+
+keycloak:
+  enabled: true
+  keycloakCRName: itlusions-keycloak
+  realm: itlusions
+  namespace: auth   # namespace van de Keycloak-CR
+  clientId: itlusions-headplane
+  displayName: "Headplane (Headscale admin UI)"
+  # Niet geverifieerd tegen de draaiende container: controleer het callback-pad.
+  redirectUris:
+    - "https://headplane.itlusions.com/admin/oidc/callback"
+  webOrigins:
+    - "https://headplane.itlusions.com"
+  clientSecretRef:
+    name: headplane-oidc-secret
+    key: client-secret
+
+# Genereert de OIDC-clientsecret en cookie-secret via lookup (alleen bij helm install/upgrade).
+# De Headscale-API-key moet je zelf aanleveren, zie headscale.apiKeySecretRef.
+secrets:
+  manage: true
+
+resources: {}

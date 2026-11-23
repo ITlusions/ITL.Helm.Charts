@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: headplane-config
+  namespace: {{ .Values.namespace.name }}
+data:
+  config.yaml: |
+    server:
+      host: "0.0.0.0"
+      port: {{ .Values.service.port }}
+      base_url: "https://{{ .Values.route.hostname }}"
+      cookie_secure: true
+      cookie_max_age: 86400
+      cookie_secret_path: /etc/headplane/cookie/cookie-secret
+      data_path: {{ .Values.server.dataPath | quote }}
+
+    headscale:
+      url: {{ .Values.headscale.url | quote }}
+      public_url: {{ .Values.headscale.publicUrl | quote }}
+      # Niet geverifieerd: api_key_path is afgeleid van de andere *_path-velden.
+      # Controleer de geaccepteerde config-sleutels van de draaiende container.
+      api_key_path: /etc/headplane/headscale-api/api-key
+
+    oidc:
+      enabled: true
+      issuer: {{ .Values.oidc.issuer | quote }}
+      client_id: {{ required "keycloak.clientId is required" .Values.keycloak.clientId | quote }}
+      client_secret_path: /etc/headplane/oidc/client-secret
+      use_pkce: {{ .Values.oidc.usePkce }}
+      scope: {{ .Values.oidc.scope | quote }}
+      default_role: {{ .Values.oidc.defaultRole | quote }}
+      role_claim: {{ .Values.oidc.roleClaim | quote }}

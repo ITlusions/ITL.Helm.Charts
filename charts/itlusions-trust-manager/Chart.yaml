@@ -1,0 +1,12 @@
+apiVersion: v2
+name: itlusions-trust-manager
+
+icon: https://raw.githubusercontent.com/ITlusions/spotinfo-helm-charts/main/docs/assets/spotinfo-logo-wo.svg
+description: ITlusions trust-manager companion to cert-manager
+type: application
+version: 0.1.0
+appVersion: "v0.26.0"
+dependencies:
+  - name: trust-manager
+    version: "v0.26.0"
+    repository: "oci://quay.io/jetstack/charts"

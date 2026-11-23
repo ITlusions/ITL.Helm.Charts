@@ -1,0 +1,18 @@
+{{- if .Values.selfSignedIssuer.enabled }}
+# Needs a post-install/post-upgrade hook, not a plain resource: the ClusterIssuer CRD comes
+# from the cert-manager dependency's own templates/crd-*.yaml (regular templates, not Helm's
+# special untracked crds/ directory -- confirmed by inspecting the pulled chart), so a plain
+# ClusterIssuer here would race the CRD's own registration in the same release. Same mechanism,
+# same fix as itlusions-external-secrets' bitwarden ClusterSecretStore -- see that chart's
+# templates/bitwarden-clustersecretstore.yaml for the fuller writeup of why vendoring the CRD
+# into this chart's own crds/ directory doesn't work as an alternative.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: {{ .Values.selfSignedIssuer.name }}
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "1"
+spec:
+  selfSigned: {}
+{{- end }}

@@ -1,0 +1,43 @@
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: headplane-acl
+  namespace: {{ .Values.namespace.name }}
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: headplane
+  authorization:
+    defaultAction: Deny
+    rules:
+      - name: allow-internal
+        action: Allow
+        principal:
+          clientCIDRs:
+            {{- toYaml .Values.adminAllowedCIDRs | nindent 12 }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: headplane
+  namespace: {{ .Values.namespace.name }}
+spec:
+  hostnames:
+    - {{ .Values.route.hostname | quote }}
+  parentRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: {{ .Values.route.gateway.name }}
+      namespace: {{ .Values.route.gateway.namespace }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: headplane
+          port: {{ .Values.service.port }}
+          weight: 1

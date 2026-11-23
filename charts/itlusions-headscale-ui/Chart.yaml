@@ -1,0 +1,11 @@
+apiVersion: v2
+name: itlusions-headscale-ui
+
+icon: https://raw.githubusercontent.com/ITlusions/spotinfo-helm-charts/main/docs/assets/spotinfo-logo-wo.svg
+description: >-
+  Headplane, de beheer-webUI voor itlusions-headscale. Aparte chart en release,
+  zodat Headplane los van de Headscale-server kan worden uitgerold, geschaald of
+  verwijderd.
+type: application
+version: 0.1.0
+appVersion: "0.8.2"

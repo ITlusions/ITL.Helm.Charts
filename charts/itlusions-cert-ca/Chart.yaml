@@ -1,0 +1,8 @@
+apiVersion: v2
+name: itlusions-cert-ca
+
+icon: https://raw.githubusercontent.com/ITlusions/spotinfo-helm-charts/main/docs/assets/spotinfo-logo-wo.svg
+description: ITlusions internal CA and purpose-specific intermediates for cert-manager
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

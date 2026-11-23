@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-hellowrld
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/part-of: itlusions
+  annotations:
+    itlusions.io/ci-check: "all-charts-validated"
+data:
+  message: {{ .Values.message | quote }}

@@ -1,0 +1,8 @@
+{{- $legacyRoot := lookup "cert-manager.io/v1" "Certificate" .Release.Namespace "itl-root-ca" -}}
+{{- if $legacyRoot -}}
+{{- $annotations := default dict $legacyRoot.metadata.annotations -}}
+{{- $owned := and (eq (index $annotations "meta.helm.sh/release-name") .Release.Name) (eq (index $annotations "meta.helm.sh/release-namespace") .Release.Namespace) -}}
+{{- if or $owned (eq $legacyRoot.spec.secretName .Values.root.secretName) -}}
+{{- fail "The legacy itl-root-ca Certificate is owned by this release or uses this root Secret. Automatic upgrade is blocked to protect the existing CA; see the migration warning in the ITlusions CA README." -}}
+{{- end -}}
+{{- end -}}

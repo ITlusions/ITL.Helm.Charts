@@ -1,0 +1,11 @@
+{{- if .Values.namespace.create }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.namespace.name }}
+  {{- if .Values.subnetRouter.enabled }}
+  labels:
+    # PodSecurity wordt per namespace afgedwongen; de subnet-router heeft NET_ADMIN nodig.
+    pod-security.kubernetes.io/enforce: privileged
+  {{- end }}
+{{- end }}

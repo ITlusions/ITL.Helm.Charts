@@ -1,0 +1,108 @@
+{{- if .Values.subnetRouter.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: subnet-router
+  namespace: {{ .Values.namespace.name }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: subnet-router
+  namespace: {{ .Values.namespace.name }}
+rules:
+  # De tailscale-image slaat zijn state op in het Secret `tailscale` (TS_KUBE_SECRET).
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["tailscale"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["create"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: subnet-router
+  namespace: {{ .Values.namespace.name }}
+subjects:
+  - kind: ServiceAccount
+    name: subnet-router
+    namespace: {{ .Values.namespace.name }}
+roleRef:
+  kind: Role
+  name: subnet-router
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: subnet-router
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    app.kubernetes.io/name: subnet-router
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate   # een tailnet-identiteit: geen rolling update
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: subnet-router
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: subnet-router
+    spec:
+      # Verwijdert één NAT-laag voor NAT-traversal van WireGuard.
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: subnet-router
+      containers:
+        - name: tailscale
+          image: "{{ .Values.subnetRouter.image.repository }}:{{ .Values.subnetRouter.image.tag }}"
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - NET_RAW
+          env:
+            - name: TS_AUTHKEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.subnetRouter.authKeySecretRef.name }}
+                  key: {{ .Values.subnetRouter.authKeySecretRef.key }}
+            - name: TS_AUTH_ONCE
+              value: "true"
+            - name: TS_EXTRA_ARGS
+              value: "--login-server={{ .Values.serverUrl }}"
+            - name: TS_ROUTES
+              value: {{ join "," .Values.subnetRouter.advertiseRoutes | quote }}
+            - name: TS_USERSPACE
+              value: "false"
+            - name: TS_DEBUG_FIREWALL_MODE
+              value: {{ .Values.subnetRouter.firewallMode | quote }}
+            - name: TS_HOSTNAME
+              value: {{ .Values.subnetRouter.hostname | quote }}
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_UID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          volumeMounts:
+            - name: tun
+              mountPath: /dev/net/tun
+          resources:
+            {{- toYaml (.Values.subnetRouter.resources | default dict) | nindent 12 }}
+      volumes:
+        - name: tun
+          # Niet geverifieerd op DOKS: controleer of /dev/net/tun op de nodes bestaat.
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
+{{- end }}

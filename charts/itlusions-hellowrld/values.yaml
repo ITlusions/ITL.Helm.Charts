@@ -1,0 +1,3 @@
+# Tekst die in de ConfigMap wordt geschreven.
+# Wijzigingen hier vereisen geen versieverhoging van de chart in CI-testruns.
+message: Hallo, wereld!

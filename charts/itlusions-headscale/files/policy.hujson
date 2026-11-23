@@ -1,0 +1,15 @@
+{
+  // Minimaal, expliciet beleid: gelijk aan het impliciete gedrag van Headscale zonder
+  // beleid (elk geregistreerd apparaat bereikt elk ander apparaat). Dit maakt de
+  // toegang zichtbaar in Git en biedt een startpunt om later aan te scherpen.
+  //
+  // Headscale-ACL-groepen gebruiken Headscale-gebruikersnamen, niet Keycloak-groepen.
+  // Die zijn twee aparte systemen.
+  "acls": [
+    {
+      "action": "accept",
+      "src": ["*"],
+      "dst": ["*:*"],
+    },
+  ],
+}

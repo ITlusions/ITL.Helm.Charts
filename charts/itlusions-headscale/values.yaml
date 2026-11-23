@@ -1,0 +1,103 @@
+namespace:
+  create: true
+  name: itlusions-headscale
+
+image:
+  repository: headscale/headscale
+  tag: "v0.29.5"   # controleer de release vóór uitrol als deze lang ongebruikt blijft
+
+# Publieke hostnaam waarop apparaten en de OIDC-loginflow verbinden.
+# Headscale spreekt HTTP(S) en wordt via de Envoy Gateway ontsloten.
+serverUrl: "https://headscale.itlusions.com"
+
+# Adresbereik van het tailnet (Tailscale CGNAT-standaard).
+internalSubnet: "100.64.0.0/10"
+
+service:
+  port: 8080
+  metricsPort: 9090
+
+# Gateway API: HTTPRoute aan de bestaande Gateway `eg` in namespace `auth`.
+# De listener en het certificaat voor de hostnaam moeten in de api-gateway-configuratie staan.
+route:
+  hostname: headscale.itlusions.com
+  gateway:
+    name: eg
+    namespace: auth
+
+# Toegangslijst voor de Headplane- en Swagger-routes. Leeg betekent: alles geweigerd.
+# Vul hier de bron-CIDR's van het interne netwerk in.
+adminAllowedCIDRs: []
+
+# Pod-CIDR van DOKS. Controleer dit op het cluster voordat je het vastlegt.
+trustedProxies:
+  - "10.244.0.0/16"
+
+database:
+  path: /var/lib/headscale/db.sqlite
+
+storage:
+  # DOKS-standaard; controleer de beschikbare StorageClass op het cluster.
+  storageClassName: do-block-storage
+  size: 1Gi
+
+# Genereert de OIDC-clientsecret via lookup (alleen bij helm install/upgrade).
+# De preauth-key van de subnet router moet je zelf aanleveren, zie subnetRouter.authKeySecretRef.
+secrets:
+  manage: true
+
+# DNS-basisdomein voor MagicDNS binnen het tailnet.
+magicDnsBaseDomain: ts.itlusions.com
+
+oidc:
+  issuer: "https://sts.itlusions.com/realms/itlusions"
+  # Secret moet de sleutel client-secret bevatten.
+  clientSecretRef:
+    name: headscale-oidc-secret
+  # Groepen moeten in Keycloak bestaan voordat deze chart live gaat.
+  # Volledige groepspaden, zoals de itlusions-groups-scope ze uitgeeft.
+  # Open punt: de groepsnaam voor VPN-toegang moet nog worden vastgesteld.
+  allowedGroups:
+    - "/itlusions-prod-platform-vpn"
+  scope:
+    - openid
+    - profile
+    - email
+
+keycloak:
+  enabled: true
+  keycloakCRName: itlusions-keycloak
+  realm: itlusions
+  namespace: auth   # namespace van de Keycloak-CR
+  clientId: itlusions-headscale
+  displayName: "Headscale"
+  redirectUris:
+    - "https://headscale.itlusions.com/oidc/callback"
+  webOrigins:
+    - "https://headscale.itlusions.com"
+  clientSecretRef:
+    name: headscale-oidc-secret
+    key: client-secret
+
+resources: {}
+
+# In-cluster Tailscale-client als subnet router. Staat standaard uit: vul de routes in
+# voordat je deze inschakelt.
+subnetRouter:
+  enabled: false
+  image:
+    repository: tailscale/tailscale
+    tag: "v1.104.2"   # controleer de release vóór uitrol als deze lang ongebruikt blijft
+  hostname: "itlusions-cluster-gateway"
+  # Secret moet een Headscale-preauth-key bevatten (sleutel authkey).
+  authKeySecretRef:
+    name: subnet-router-authkey
+    key: authkey
+  # VPC-range van de eigen omgeving (plan 13-12, A6): dev 10.120.0.0/20, test 10.130.0.0/20,
+  # acc 10.140.0.0/20, prod 10.150.0.0/20. Pod- en Service-ranges staan niet in dit lijstje (O13).
+  # Elke route moet in Headscale worden goedgekeurd voordat clients hem gebruiken.
+  advertiseRoutes:
+    - "10.120.0.0/20"
+  # Op Talos-nodes vereist; op DOKS controleren of iptables-legacy werkt.
+  firewallMode: "nftables"
+  resources: {}

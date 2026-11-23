@@ -1,0 +1,10 @@
+suite: cert-manager overrides
+tests:
+  - it: installeert de cert-manager CRD's, omdat crds.enabled true is
+    documentSelector:
+      path: metadata.name
+      value: certificates.cert-manager.io
+      skipEmptyTemplates: true
+    asserts:
+      - isNotNull:
+          path: metadata.name

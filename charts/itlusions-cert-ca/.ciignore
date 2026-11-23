@@ -1,0 +1,1 @@
+Skipped by CI and release discovery: templates use lookup on cert-manager.io Certificate, which fails on a cluster without existing resources.

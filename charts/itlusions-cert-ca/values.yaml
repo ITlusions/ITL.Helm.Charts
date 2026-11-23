@@ -1,0 +1,30 @@
+root:
+  commonName: "ITlusions Root CA"
+  organization: ["ITlusions"]
+  country: ["NL"]
+  duration: 87600h
+  secretName: itlusions-root-ca
+
+intermediates:
+  - name: database-client
+    commonName: "ITlusions Database Client CA"
+    organization: ["ITlusions"]
+    country: ["NL"]
+    duration: 43800h
+    secretName: itlusions-database-client-ca
+    issuerName: itlusions-database-client-ca-issuer
+  - name: workload
+    commonName: "ITlusions Workload CA"
+    organization: ["ITlusions"]
+    country: ["NL"]
+    duration: 43800h
+    secretName: itlusions-workload-ca
+    issuerName: itlusions-workload-ca-issuer
+
+trustBundle:
+  enabled: false
+  name: itlusions-internal-trust
+  includePublicCAs: false
+  additionalSources: []
+  namespaces: [cert-manager, keycloak, operators]
+  namespaceSelector: {}

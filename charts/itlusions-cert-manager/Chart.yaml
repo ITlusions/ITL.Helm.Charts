@@ -1,0 +1,11 @@
+apiVersion: v2
+name: itlusions-cert-manager
+icon: https://raw.githubusercontent.com/ITlusions/spotinfo-helm-charts/main/docs/assets/spotinfo-logo-wo.svg
+description: ITlusions wrapper voor cert-manager
+type: application
+version: 0.1.0
+appVersion: "v1.21.1"
+dependencies:
+  - name: cert-manager
+    version: "~v1.21.1"
+    repository: "oci://quay.io/jetstack/charts"

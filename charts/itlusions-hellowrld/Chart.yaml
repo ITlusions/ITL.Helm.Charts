@@ -1,0 +1,6 @@
+apiVersion: v2
+name: itlusions-hellowrld
+icon: https://raw.githubusercontent.com/ITlusions/spotinfo-helm-charts/main/docs/assets/spotinfo-logo-wo.svg
+description: Minimale hello world chart die een ConfigMap rendert.
+type: application
+version: 0.2.0

@@ -1,0 +1,17 @@
+cert-manager:
+  crds:
+    enabled: true
+    keep: true
+  webhook:
+    timeoutSeconds: 20
+selfSignedIssuer:
+  enabled: true
+  name: itlusions-selfsigned
+letsEncryptIssuer:
+  enabled: false
+  name: itlusions-letsencrypt
+  email: ''
+  server: https://acme-staging-v02.api.letsencrypt.org/directory
+  digitalOcean:
+    tokenSecretName: digitalocean-dns-token
+    tokenSecretKey: token
