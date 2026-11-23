@@ -1,0 +1,10 @@
+charts/*/charts/
+test/kind/config/charts/
+dist/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv-docs/
+site/

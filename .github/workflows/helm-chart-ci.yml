@@ -1,0 +1,61 @@
+name: Helm Chart CI
+
+# ---------------------------------------------------------------------------
+# Caller for the reusable Helm CI from ITlusions/ITL.Github. Tests the charts changed since
+# the branch point (plus charts that depend on them).
+#
+# Changes are detected with chart-pipeline changed. The weekly schedule and
+# workflow_dispatch with full-scan test every non-ignored chart.
+# ---------------------------------------------------------------------------
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+  pull_request:
+    branches:
+      - develop
+      - main
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      full-scan:
+        description: Test every non-ignored chart instead of only the changed ones
+        type: boolean
+        default: false
+      chart:
+        description: Test only this chart directory under charts/ (leave empty for change detection)
+        type: string
+        default: ""
+      security-summary-layout:
+        description: Layout of the security summary
+        type: choice
+        options:
+          - classic
+          - flat
+          - sections
+          - counts
+          - expiry
+        default: classic
+
+permissions:
+  contents: read
+
+concurrency:
+  group: helm-ci-${{ github.ref }}-${{ inputs.security-summary-layout || '' }}
+  cancel-in-progress: true
+
+jobs:
+  pipeline:
+    uses: ITlusions/ITL.Github/.github/workflows/_managed-helm-pipeline.yml@latest
+    with:
+      full-scan: ${{ github.event_name == 'schedule' || inputs.full-scan == true }}
+      chart: ${{ inputs.chart || '' }}
+      default-kube-version: "1.36.4"
+      scheduled-kube-versions: '["1.36.4"]'
+      security-summary-layout: ${{ inputs.security-summary-layout || 'classic' }}
+    permissions:
+      contents: read
+      actions: read

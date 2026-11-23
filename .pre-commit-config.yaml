@@ -1,0 +1,23 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: no-commit-to-branch
+        args: ['--branch', 'main']
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+        description: Forces to replace line ending by the UNIX 'lf' character.
+      - id: check-yaml
+      - id: check-toml
+  - repo: local
+    hooks:
+      - id: helm-lint
+        name: Helm Lint
+        entry: chart-pipeline lint-all
+        language: python
+        additional_dependencies: ['helm-ci @ git+https://github.com/ITlusions/ITL.Github.git']
+        pass_filenames: false
+        files: ^charts/

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/Amsterdam",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 2,
+  "ignorePaths": [
+    "archive/**",
+    "dist/**",
+    "site/**",
+    ".scratch/**",
+    ".venv-docs/**",
+    "charts/*/charts/**"
+  ],
+  "packageRules": [
+    {
+      "description": "Group GitHub Actions bumps into one PR per week",
+      "matchManagers": ["github-actions"],
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Group Helm chart dependency bumps into one PR per week",
+      "matchManagers": ["helmv3"],
+      "groupName": "helm dependencies"
+    }
+  ]
+}
